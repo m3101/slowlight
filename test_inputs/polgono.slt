@@ -1,0 +1,11 @@
+#A simple test scene for slowlight
+#Contains a 10u-sized plane 10u into the x axis centered around (10,0,0)
+2
+255 0 0
+10 -5 -5
+10 -5 5
+10 5 5
+255 0 0
+10 -5 -5
+10 5 -5
+10 5 5

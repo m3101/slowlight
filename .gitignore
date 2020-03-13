@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# External libraries (gfx for raster_test.c and control_test.c)
+external
+
+# Project-specific Compile results
+build
