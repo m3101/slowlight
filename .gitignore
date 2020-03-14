@@ -52,7 +52,7 @@ Mkfile.old
 dkms.conf
 
 # External libraries (gfx for raster_test.c and control_test.c)
-external
+#external
 
 # Project-specific Compile results
 build
