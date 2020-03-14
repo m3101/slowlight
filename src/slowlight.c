@@ -24,6 +24,24 @@ SOFTWARE.
 */
 
 /*
+The following vectors are general-purpose vectors used under many different names by the functions below.
+This makes it so they don't have to spend cycles allocating and freeing memory for temporary vectors.
+*/
+slvect _slgp0={0,0,0};
+slvect _slgp1={0,0,0};
+slvect _slgp2={0,0,0};
+slvect _slgp3={0,0,0};
+
+slvect _slgpm0={0,0,0};
+slvect _slgpm1={0,0,0};
+slvect _slgpm2={0,0,0};
+slvect _slgpm3={0,0,0};
+
+slvect slx={1,0,0};
+slvect sly={0,1,0};
+slvect slz={0,0,1};
+
+/*
 Instantiators
 */
 
@@ -36,7 +54,7 @@ slraster* Slraster(int w, int h, int s)
     ret->s=s;
     return ret;
 }
-void freeSlraster(slraster** obj)
+void freeslraster(slraster** obj)
 {
     if(!obj||!(*obj))return;
     if((*obj)->data)free((*obj)->data);
@@ -61,6 +79,7 @@ slray* Slray(slraster* screen, int rx, int ry, const slvect *pos, const slvect *
     ret->ry=ry;
     ret->pos=*pos;
     ret->dir=*dir;
+    ret->c=0;
     return ret;
 }
 
@@ -71,6 +90,62 @@ sltri* Sltri(const slvect *a,const slvect *b,const slvect *c)
     ret->b=*b;
     ret->c=*c;
     return ret;
+}
+
+slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const float roll,const float fl,const float w,const float h,const float raystep)
+{
+    if(!image||!pos||!dir)return NULL;
+    slcamera *ret=malloc(sizeof(slcamera));
+    slray *ray;
+    slvect *rpos=&_slgpm0,*rdir=&_slgpm1,*rotaxis=&_slgpm2,*focalpoint=&_slgpm3;
+    int length=image->h*image->w;
+    int i,x,y;
+    ret->pos=*pos;
+    ret->dir=*dir;
+    slvectnormalize(&ret->dir);
+    ret->image=image;
+    ret->fl=fl;
+    ret->w=w;
+    ret->h=h;
+    ret->roll=roll;
+
+    /*We first define the focal point of the camera*/
+    slvectscale(dir,fl,rdir);
+    slvectsub(pos,rdir,focalpoint);
+
+    ret->rays=malloc(length*sizeof(slray));
+    for(i=0;i<length;i++)
+    {
+        x=i%image->w;
+        y=floor(i/image->w);
+        /*First we place the vector as if the camera was pointing upwards, that is, (0,0,1) at (0,0,0)*/
+        rpos->x=(-(w/2))+((w/(image->w-1))*x);
+        rpos->y=(-(h/2))+((h/(image->h-1))*y);
+        rpos->z=0;
+        /*Then we rotate them so they align with the camera's normal vector*/
+        slvectproduct(&ret->dir,&slz,rotaxis);
+        slvectrotateaxis(rpos,rotaxis,acos(slscproduct(&ret->dir,&slz)));
+        /*Then we roll them to the specified roll*/
+        slvectrotateaxis(rpos,&ret->dir,roll);
+        /*Then displace them to the camera position*/
+        slvectsum(rpos,pos,rpos);
+        /*Now we have positioned the ray, let's find its direction.*/
+        slvectsub(rpos,focalpoint,rdir);
+        slvectnormalize(rdir);
+        slvectscale(rdir,raystep,rdir);
+        ret->rays[i]=Slray(image,x,y,rpos,rdir);
+    }
+    return ret;
+}
+
+void freeslcamera(slcamera **camera)
+{
+    if(!camera||!(*camera))return;
+    int i,s;
+    s=(*camera)->image->h*(*camera)->image->w*(*camera)->image->s;
+    for(i=0;i<s;i++)free((*camera)->rays[i]);
+    free(*camera);
+    *camera=NULL;
 }
 
 /*
@@ -114,18 +189,42 @@ void slvectsub(const slvect *a,const slvect *b, slvect *c)
     c->z=a->z-b->z;
 }
 
+void slvectnormalize(slvect *a)
+{
+    float sf=slscproduct(a,a);
+    a->x=a->x/sf;
+    a->y=a->y/sf;
+    a->z=a->z/sf;
+}
+
+/*See https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions - General Rotations*/
+void slvectrotate(slvect *a,float rx,float ry,float rz)
+{
+    float srx=sin(rx),sry=sin(ry),srz=sin(rz),crx=cos(rx),cry=cos(ry),crz=cos(rz);
+    slvect* tmp=&_slgp0;
+    tmp->x=(a->x*(crz*cry))+(a->y*(crz*sry*srx-srz*crx))+(a->z*(crz*sry*crx+srz*srx));
+    tmp->y=(a->x*(srz*cry))+(a->y*(srz*sry*srx+crz*crx))+(a->z*(srz*sry*crx-crz*srx));
+    tmp->z=(a->x*(-sry))+(a->y*(cry*srx))+(a->z*(cry*crx));
+    a->x=tmp->x;
+    a->y=tmp->y;
+    a->z=tmp->z;
+}
+
+/*See https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula*/
+void slvectrotateaxis(slvect *a,const slvect *r,float rv)
+{
+    slvect* res=&_slgp0,*temp=&_slgp1;
+    slvectscale(a,cos(rv),res);
+    slvectproduct(r,a,temp);
+    slvectscale(temp,sin(rv),temp);
+    slvectsum(res,temp,res);
+    slvectscale(r,slscproduct(r,a)*(1-cos(rv)),temp);
+    slvectsum(res,temp,a);
+}
+
 /*
 Vector-Triangle functions
 */
-
-/*
-The following vectors are general-purpose vectors used under many different names by the functions below.
-This makes it so they don't have to spend cycles allocating and freeing memory for temporary vectors.
-*/
-slvect _slgp0={0,0,0};
-slvect _slgp1={0,0,0};
-slvect _slgp2={0,0,0};
-slvect _slgp3={0,0,0};
 
 /*See https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection - Algebraic Form*/
 float slvectintersect(const slvect *pos,const slvect *dir,const sltri *t)

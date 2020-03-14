@@ -6,17 +6,30 @@ by Prof. Thain
 */
 
 #include <stdio.h>
-#include "gfx.h"
+#include <stdlib.h>
+#include "../src/slowlight.h"
+#include "../external/gfx.h"
 
 int main()
 {
+	slraster *raster=Slraster(3,3,3);
+	slvect *pos=Slvect(0,0,2),*dir=Slvect(1,0,0);
+	slcamera *cam=Slcamera(raster,pos,dir,0,3,2,2,1);
+
+	//printf("execute({\"Vector((%.2lf,%.2lf,%.2lf),(%.2lf+(%.2lf),%.2lf+(%.2lf),%.2lf+(%.2lf)))\",",cam->pos.x,cam->pos.y,cam->pos.z,cam->pos.x,cam->dir.x,cam->pos.y,cam->dir.y,cam->pos.z,cam->dir.z);
+	printf("execute({");
+	int x,y;
+	for(y=0;y<3;y++)
+		for(x=0;x<3;x++)
+			printf("\"Vector((%.2lf,%.2lf,%.2lf),(%.2lf+(%.2lf),%.2lf+(%.2lf),%.2lf+(%.2lf)))\",",cam->rays[x+3*y]->pos.x,cam->rays[x+3*y]->pos.y,cam->rays[x+3*y]->pos.z,cam->rays[x+3*y]->pos.x,cam->rays[x+3*y]->dir.x,cam->rays[x+3*y]->pos.y,cam->rays[x+3*y]->dir.y,cam->rays[x+3*y]->pos.z,cam->rays[x+3*y]->dir.z);
+	printf("\"f=1\"})\n");
 	int ysize = 300;
-	int xsize = 300;
+	int xsize = 600;
 
 	char c;
 
 	// Open a new window for drawing.
-	gfx_open(xsize,ysize,"Example Graphics Program");
+	gfx_open(xsize,ysize,"Slowlight raster rendering test");
 
 	// Set the current drawing color to green.
 	gfx_color(0,200,100);
@@ -34,5 +47,8 @@ int main()
 		if(c=='q') break;
 	}
 
+	freeslcamera(&cam);
+	freeslraster(&raster);
+	free(pos);free(dir);
 	return 0;
 }

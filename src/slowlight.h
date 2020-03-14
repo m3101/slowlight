@@ -24,7 +24,7 @@ SOFTWARE.
 
 #ifndef SLOWLIGHT
 #define SLOWLIGHT
-
+#define SL_PI 3.14159265358979323846
 /*Data structures and allocation functions*/
 
 /*
@@ -38,11 +38,11 @@ typedef struct _slraster {
 }slraster;
 /*
 Instantiates a slraster object.
-One should use the freeSlraster to free its memory (as it allocates memory for storing the image data)
+One should use the freeslraster to free its memory (as it allocates memory for storing the image data)
 */
 slraster* Slraster(int w, int h, int s);
 /*Frees a slraster object*/
-void freeSlraster(slraster** obj);
+void freeslraster(slraster** obj);
 
 /*
 A vector object.
@@ -62,6 +62,7 @@ typedef struct _slray {
     slraster* screen;/*The raster image that'll receive the ray's value when it hits something*/
     int rx;/*The x coordinate of the pixel that'll be updated*/
     int ry;/*The y coordinate of the pixel that'll be updated*/
+    int c;/*Number of cycles passed since last collision*/
     slvect pos;/*A vector that marks the ray's position*/
     slvect dir;/*A direction vector*/
 }slray;
@@ -79,6 +80,30 @@ typedef struct _sltri {
 }sltri;
 /*Instantiates a sltri object. Vectors will be copied to the triangle, not passed by reference.*/
 sltri* Sltri(const slvect *a,const slvect *b,const slvect *c);
+
+/*
+A camera object.
+One should free its memory with freeslcamera, as it allocates many ray objects which might not be freed automatically.
+*/
+typedef struct _slcamera{
+    slraster *image;/*Image object*/
+    slray** rays;/*slray objects associated with this camera*/
+    slvect pos;/*Camera position*/
+    slvect dir;/*Camera orientation*/
+    float roll;/*Camera roll angle (extra orientation component)*/
+    float fl;/*"Focal length" of the camera. Affects the ray angles*/
+    float w;/*Camera width in "real-world" units (same units as the vectors)*/
+    float h;/*Camera height in "real-world" units (same units as the vectors)*/
+} slcamera;
+/*
+Generates a slcamera object from a slraster object and parameters.
+Most parameters come from slcamera properties.
+Vectors will be copied, not stored by reference, so you can reuse them without affecting the camera.
+raystep dictates how long each ray will move for each step
+*/
+slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const float roll,const float fl,const float w,const float h,const float raystep);
+/*Frees a slcamera object*/
+void freeslcamera(slcamera **camera);
 
 /*Vector functions*/
 
@@ -110,6 +135,15 @@ Subtract two vectors. C=A-B
 */
 void slvectsub(const slvect *a,const slvect *b, slvect *c);
 
+/*Normalizes a vector (so that its length is 1)*/
+void slvectnormalize(slvect *a);
+
+/*Rotates a vector around the x,y and z axes by rx,ry and rz radians.*/
+void slvectrotate(slvect *a,float rx,float ry,float rz);
+
+/*Rotates a vector around the v axis by rv radians.*/
+void slvectrotateaxis(slvect *a,const slvect *r,float rv);
+
 /*Vector-Triangle functions*/
 
 /*
@@ -134,5 +168,13 @@ Returns 1 when the point lies within the subspace and 0 otherwise (or -1 for err
 char slvectintri(const slvect *a,const sltri *t);
 
 /*Raycasting functions*/
+
+/*Constants*/
+/*(1,0,0)*/
+slvect slx;
+/*(0,1,0)*/
+slvect sly;
+/*(0,0,1)*/
+slvect slz;
 
 #endif
