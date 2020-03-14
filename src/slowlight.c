@@ -63,7 +63,7 @@ void freeslraster(slraster** obj)
     *obj=NULL;
 }
 
-slvect* Slvect(float x, float y, float z)
+slvect* Slvect(double x, double y, double z)
 {
     slvect* ret=malloc(sizeof(slvect));
     ret->x=x;
@@ -93,7 +93,7 @@ sltri* Sltri(const slvect *a,const slvect *b,const slvect *c)
     return ret;
 }
 
-slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const float roll,const float fl,const float w,const float h,const float raystep)
+slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep)
 {
     if(!image||!pos||!dir)return NULL;
     slcamera *ret=malloc(sizeof(slcamera));
@@ -109,6 +109,7 @@ slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const flo
     ret->w=w;
     ret->h=h;
     ret->roll=roll;
+    ret->raystep=raystep;
 
     /*We first define the focal point of the camera*/
     slvectscale(dir,fl,rdir);
@@ -119,24 +120,47 @@ slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const flo
     {
         x=i%image->w;
         y=floor(i/image->w);
+        ret->rays[i]=Slray(image,x,y,rpos,rdir);
+    }
+    slupdatecamera(ret);
+    return ret;
+}
+
+void slupdatecamera(slcamera *camera)
+{
+    if(!camera)return;
+    slray *ray;
+    slvect *rpos=&_slgpm0,*rdir=&_slgpm1,*rotaxis=&_slgpm2,*focalpoint=&_slgpm3;
+    int length=camera->image->h*camera->image->w;
+    int i,x,y;
+
+    /*We first define the focal point of the camera*/
+    slvectscale(&camera->dir,camera->fl,rdir);
+    slvectsub(&camera->pos,rdir,focalpoint);
+
+    for(i=0;i<length;i++)
+    {
+        if(camera->rays[i]->c)continue;
+        x=i%camera->image->w;
+        y=floor(i/camera->image->w);
         /*First we place the vector as if the camera was pointing upwards, that is, (0,0,1) at (0,0,0)*/
-        rpos->x=(-(w/2))+((w/(image->w-1))*x);
-        rpos->y=(-(h/2))+((h/(image->h-1))*y);
+        rpos->x=(-(camera->w/2))+((camera->w/(camera->image->w-1))*x);
+        rpos->y=(-(camera->h/2))+((camera->h/(camera->image->h-1))*y);
         rpos->z=0;
         /*Then we rotate them so they align with the camera's normal vector*/
-        slvectproduct(&ret->dir,&slz,rotaxis);
-        slvectrotateaxis(rpos,rotaxis,acos(slscproduct(&ret->dir,&slz)));
+        slvectproduct(&camera->dir,&slz,rotaxis);
+        slvectrotateaxis(rpos,rotaxis,acos(slscproduct(&camera->dir,&slz)));
         /*Then we roll them to the specified roll*/
-        slvectrotateaxis(rpos,&ret->dir,roll);
+        slvectrotateaxis(rpos,&camera->dir,camera->roll);
         /*Then displace them to the camera position*/
-        slvectsum(rpos,pos,rpos);
+        slvectsum(rpos,&camera->pos,rpos);
         /*Now we have positioned the ray, let's find its direction.*/
         slvectsub(rpos,focalpoint,rdir);
         slvectnormalize(rdir);
-        slvectscale(rdir,raystep,rdir);
-        ret->rays[i]=Slray(image,x,y,rpos,rdir);
+        slvectscale(rdir,camera->raystep,rdir);
+        camera->rays[i]->dir=*rdir;
+        camera->rays[i]->pos=*rpos;
     }
-    return ret;
 }
 
 void freeslcamera(slcamera **camera)
@@ -152,7 +176,7 @@ void freeslcamera(slcamera **camera)
 /*
 Vector functions
 */
-float slscproduct(const slvect *a,const slvect *b)
+double slscproduct(const slvect *a,const slvect *b)
 {
     if(!a||!b)return -1;
     return a->x*b->x+a->y*b->y+a->z*b->z;
@@ -166,7 +190,7 @@ void slvectproduct(const slvect *a,const slvect *b,slvect *c)
     c->z=a->x*b->y-a->y*b->x;
 }
 
-void slvectscale(const slvect *a,float s,slvect *b)
+void slvectscale(const slvect *a,double s,slvect *b)
 {
     if(!a||!b)return;
     b->x=a->x*s;
@@ -192,16 +216,16 @@ void slvectsub(const slvect *a,const slvect *b, slvect *c)
 
 void slvectnormalize(slvect *a)
 {
-    float sf=slscproduct(a,a);
+    double sf=slscproduct(a,a);
     a->x=a->x/sf;
     a->y=a->y/sf;
     a->z=a->z/sf;
 }
 
 /*See https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions - General Rotations*/
-void slvectrotate(slvect *a,float rx,float ry,float rz)
+void slvectrotate(slvect *a,double rx,double ry,double rz)
 {
-    float srx=sin(rx),sry=sin(ry),srz=sin(rz),crx=cos(rx),cry=cos(ry),crz=cos(rz);
+    double srx=sin(rx),sry=sin(ry),srz=sin(rz),crx=cos(rx),cry=cos(ry),crz=cos(rz);
     slvect* tmp=&_slgp0;
     tmp->x=(a->x*(crz*cry))+(a->y*(crz*sry*srx-srz*crx))+(a->z*(crz*sry*crx+srz*srx));
     tmp->y=(a->x*(srz*cry))+(a->y*(srz*sry*srx+crz*crx))+(a->z*(srz*sry*crx-crz*srx));
@@ -212,7 +236,7 @@ void slvectrotate(slvect *a,float rx,float ry,float rz)
 }
 
 /*See https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula*/
-void slvectrotateaxis(slvect *a,const slvect *r,float rv)
+void slvectrotateaxis(slvect *a,const slvect *r,double rv)
 {
     slvect* res=&_slgp0,*temp=&_slgp1;
     slvectscale(a,cos(rv),res);
@@ -228,14 +252,14 @@ Vector-Triangle functions
 */
 
 /*See https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection - Algebraic Form*/
-float slvectintersect(const slvect *pos,const slvect *dir,const sltri *t)
+double slvectintersect(const slvect *pos,const slvect *dir,const sltri *t)
 {
     if(!pos||!dir||!t)return 0;
     slvect *result=&_slgp0;
     slvect *normal=&_slgp1;
     slvect *edge1=&_slgp2;
     slvect *edge2=&_slgp3;
-    float s;
+    double s;
     /*First we calculate the vectors corresponding to the edges of the triangle*/
     slvectsub(&t->a,&t->b,edge1);
     slvectsub(&t->a,&t->c,edge2);
@@ -281,7 +305,7 @@ char slvectintri(const slvect *a,const sltri *t)
 void slcalcray(slray *ray,const sltri**triangles)
 {
     int i=0;
-    float s;
+    double s;
     slvect *pos=&_slgpm0,*dir=&_slgpm1;
     if(!ray||!triangles||!(triangles[0]))return;
     while(triangles[i]!=NULL)
@@ -293,9 +317,9 @@ void slcalcray(slray *ray,const sltri**triangles)
             slvectsum(&ray->pos,dir,pos);
             if(slvectintri(pos,triangles[i]))
             {
-                ray->screen->data[ray->rx+ray->ry*ray->screen->w]=triangles[i]->colour[0];
-                ray->screen->data[ray->rx+ray->ry*ray->screen->w+1]=triangles[i]->colour[1];
-                ray->screen->data[ray->rx+ray->ry*ray->screen->w+2]=triangles[i]->colour[2];
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=triangles[i]->colour[0];
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=triangles[i]->colour[1];
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=triangles[i]->colour[2];
                 ray->c=0;
                 return;
             }

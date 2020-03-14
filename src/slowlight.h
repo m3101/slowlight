@@ -48,12 +48,12 @@ void freeslraster(slraster** obj);
 A vector object.
 */
 typedef struct _slvect {
-    float x;/*The point's x coordinate*/
-    float y;/*The point's y coordinate*/
-    float z;/*The point's z coordinate*/ 
+    double x;/*The point's x coordinate*/
+    double y;/*The point's y coordinate*/
+    double z;/*The point's z coordinate*/ 
 } slvect;
 /*Instantiates a slvect object*/
-slvect* Slvect(float x, float y, float z);
+slvect* Slvect(double x, double y, double z);
 
 /*
 A ray object.
@@ -90,10 +90,11 @@ typedef struct _slcamera{
     slray** rays;/*slray objects associated with this camera*/
     slvect pos;/*Camera position*/
     slvect dir;/*Camera orientation*/
-    float roll;/*Camera roll angle (extra orientation component)*/
-    float fl;/*"Focal length" of the camera. Affects the ray angles*/
-    float w;/*Camera width in "real-world" units (same units as the vectors)*/
-    float h;/*Camera height in "real-world" units (same units as the vectors)*/
+    double roll;/*Camera roll angle (extra orientation component)*/
+    double fl;/*"Focal length" of the camera. Affects the ray angles*/
+    double w;/*Camera width in "real-world" units (same units as the vectors)*/
+    double h;/*Camera height in "real-world" units (same units as the vectors)*/
+    double raystep;/*Camera raystep*/
 } slcamera;
 /*
 Generates a slcamera object from a slraster object and parameters.
@@ -101,7 +102,9 @@ Most parameters come from slcamera properties.
 Vectors will be copied, not stored by reference, so you can reuse them without affecting the camera.
 raystep dictates how long each ray will move for each step
 */
-slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const float roll,const float fl,const float w,const float h,const float raystep);
+slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep);
+/*Updates a camera's rays to its current parameters and position*/
+void slupdatecamera(slcamera *camera);
 /*Frees a slcamera object*/
 void freeslcamera(slcamera **camera);
 
@@ -110,7 +113,7 @@ void freeslcamera(slcamera **camera);
 /*
 Scalar product (takes two vector as input and outputs their internal product (sum of products of coordinates))
 */
-float slscproduct(const slvect *a,const slvect *b);
+double slscproduct(const slvect *a,const slvect *b);
 /*
 3d-Vectorial product. Outputs a vector perpendicular to both input vectors at c.
 C = A x B
@@ -125,7 +128,7 @@ void slvectproduct(const slvect *a,const slvect *b,slvect *c);
 /*
 Multiply a vector by a scalar. B=s*A
 */
-void slvectscale(const slvect *a,float s,slvect *b);
+void slvectscale(const slvect *a,double s,slvect *b);
 /*
 Sum two vectors. C=A+B
 */
@@ -139,10 +142,10 @@ void slvectsub(const slvect *a,const slvect *b, slvect *c);
 void slvectnormalize(slvect *a);
 
 /*Rotates a vector around the x,y and z axes by rx,ry and rz radians.*/
-void slvectrotate(slvect *a,float rx,float ry,float rz);
+void slvectrotate(slvect *a,double rx,double ry,double rz);
 
 /*Rotates a vector around the v axis by rv radians.*/
-void slvectrotateaxis(slvect *a,const slvect *r,float rv);
+void slvectrotateaxis(slvect *a,const slvect *r,double rv);
 
 /*Vector-Triangle functions*/
 
@@ -159,7 +162,7 @@ Else:
     Point p= A.s
     p lies on the plane on which T lies.
 */
-float slvectintersect(const slvect *pos,const slvect *dir,const sltri *t);
+double slvectintersect(const slvect *pos,const slvect *dir,const sltri *t);
 /*
 Calculates whether a point (vector) lies within the subspace defined by a triangle sliding along its normal axis.
 (E.g. if the point and the triangle are at the same plane, calculates whether the point is inside the triangle).

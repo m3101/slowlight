@@ -10,7 +10,7 @@ int main()
 {
     slvect *a,*b,*c,*vpos,*vdir;
     sltri *tri;
-    float s;
+    double s;
     a=Slvect(5,-5,-5);
     b=Slvect(5,5,-5);
     c=Slvect(5,0,5);
