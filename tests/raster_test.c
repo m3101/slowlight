@@ -2,14 +2,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 #include "../src/slowlight.h"
 #include "../external/gfx.h"
 
 int main()
 {
 	slraster *raster=Slraster(300,300,3);
-	slvect *pos=Slvect(4.5,0,2),*dir=Slvect(1,0,0);
-	slcamera *cam=Slcamera(raster,pos,dir,0,1,20,20,0.9,100);
+	slvect *pos=Slvect(4.5,0,3),*dir=Slvect(1,0,0);
+	slcamera *cam=Slcamera(raster,pos,dir,0,1,20,20,0.1,6);
 	slrandray(cam,100);
 	sltri** triangles=malloc(sizeof(sltri)*3);
 	slvect *a,*b,*c;
@@ -20,9 +21,9 @@ int main()
 	triangles[0]->colour[0]=255;
 	triangles[0]->colour[1]=0;
 	triangles[0]->colour[2]=0;
-	a->x=6.000001;a->y=-50;a->z=-50;
-	b->x=6.000001;b->y=50;b->z=-50;
-	c->x=6.000001;c->y=0;c->z=50;
+	a->x=5.000001;a->y=-50;a->z=-50;
+	b->x=5.000001;b->y=50;b->z=-50;
+	c->x=5.000001;c->y=0;c->z=50;
 	triangles[1]=Sltri(a,b,c);
 	triangles[1]->colour[0]=0;
 	triangles[1]->colour[1]=0;
@@ -58,10 +59,9 @@ int main()
 				gfx_point(x,y);
 			}
 		}
-		cam->roll+=0.009*((cyc-(double)cy)/cyc);
-		cam->raystep+=0.01;
+		cam->roll=(SL_PI/4)*sin((SL_PI*5*cy)/200);
 		//cam->pos.x+=.01;
-		slupdatecamera(cam);
+		slupdatecamera(cam,4);
 		nanosleep(&tim,&tim2);
 		cy++;
 	}

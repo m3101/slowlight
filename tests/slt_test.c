@@ -9,10 +9,10 @@
 
 int main()
 {
-    int s=150;
+    int s=300;
 	slraster *raster=Slraster(s,s,3);
-	slvect *pos=Slvect(-4,4,4),*dir=Slvect(1,-1,0);
-	slcamera *cam=Slcamera(raster,pos,dir,-SL_PI/4,2,5,5,1.9,100);
+	slvect *pos=Slvect(-3,3,4),*dir=Slvect(1,-1,0);
+	slcamera *cam=Slcamera(raster,pos,dir,-SL_PI/4,1,5,5,0.3,10);
     slrandray(cam,100);
 	sltri** triangles=sltToSltriList("build/polgono.slt");
     if(!triangles)
@@ -25,9 +25,6 @@ int main()
 	for(y=0;y<7;y++)
 		printf("\"Polygon({(%.2lf,%.2lf,%.2lf),(%.2lf,%.2lf,%.2lf),(%.2lf,%.2lf,%.2lf)})\",",triangles[y]->a.x,triangles[y]->a.y,triangles[y]->a.z,triangles[y]->b.x,triangles[y]->b.y,triangles[y]->b.z,triangles[y]->c.x,triangles[y]->c.y,triangles[y]->c.z);
 	printf("\"f=1\"})\n");
-    printf("Colours:\n");
-	for(y=0;y<7;y++)
-		printf("(%X,%X,%X)\n",triangles[y]->colour[0],triangles[y]->colour[1],triangles[y]->colour[2]);
 
 	char h;
 
@@ -48,10 +45,10 @@ int main()
 				gfx_point(x,y);
 			}
 		}
-        //cam->pos.z+=0.01;
-        cam->roll+=cy<200?0.01:0;
-		//cam->fl=1+1*sin((double)cy/1000);
-		slupdatecamera(cam);
+		if(cy<200)
+        	cam->roll=2*((SL_PI/4)*sin((SL_PI*2*cy)/200)*sin((SL_PI*cy)/200));
+		else cam->roll=0;
+		slupdatecamera(cam,10);
 		nanosleep(&tim,&tim2);
 		cy++;
 	}

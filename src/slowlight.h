@@ -105,8 +105,12 @@ Vectors will be copied, not stored by reference, so you can reuse them without a
 raystep dictates how long each ray will move for each step
 */
 slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep,const double depth);
-/*Updates a camera's rays to its current parameters and position*/
-void slupdatecamera(slcamera *camera);
+/*
+Updates a camera's rays to its current parameters and position
+rnd defines the amplitude of the random starting length of the rays
+(rnd=0 initializes the ray with length 0, that is, at the camera)
+*/
+void slupdatecamera(slcamera *camera,int rnd);
 /*Frees a slcamera object*/
 void freeslcamera(slcamera **camera);
 

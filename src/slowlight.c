@@ -32,6 +32,7 @@ slvect _slgp0={0,0,0};
 slvect _slgp1={0,0,0};
 slvect _slgp2={0,0,0};
 slvect _slgp3={0,0,0};
+slvect _slgp4={0,0,0};
 
 slvect _slgpm0={0,0,0};
 slvect _slgpm1={0,0,0};
@@ -124,11 +125,11 @@ slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const dou
         y=floor(i/image->w);
         ret->rays[i]=Slray(image,x,y,rpos,rdir);
     }
-    slupdatecamera(ret);
+    slupdatecamera(ret,0);
     return ret;
 }
 
-void slupdatecamera(slcamera *camera)
+void slupdatecamera(slcamera *camera,int rnd)
 {
     if(!camera)return;
     slray *ray;
@@ -143,6 +144,7 @@ void slupdatecamera(slcamera *camera)
     for(i=0;i<length;i++)
     {
         if(camera->rays[i]->c)continue;
+        if(rnd)camera->rays[i]->c=rand()%rnd;
         x=i%camera->image->w;
         y=floor(i/camera->image->w);
         /*First we place the vector as if the camera was pointing upwards, that is, (0,0,1) at (0,0,0)*/
@@ -188,9 +190,13 @@ double slscproduct(const slvect *a,const slvect *b)
 void slvectproduct(const slvect *a,const slvect *b,slvect *c)
 {
     if(!a||!b||!c)return;
-    c->x=a->y*b->z-a->z*b->y;
-    c->y=a->z*b->x-a->x*b->z;
-    c->z=a->x*b->y-a->y*b->x;
+    slvect *temp=&_slgp4;
+    temp->x=a->y*b->z-a->z*b->y;
+    temp->y=a->z*b->x-a->x*b->z;
+    temp->z=a->x*b->y-a->y*b->x;
+    c->x=temp->x;
+    c->y=temp->y;
+    c->z=temp->z;
 }
 
 void slvectscale(const slvect *a,double s,slvect *b)
@@ -219,7 +225,7 @@ void slvectsub(const slvect *a,const slvect *b, slvect *c)
 
 void slvectnormalize(slvect *a)
 {
-    double sf=slscproduct(a,a);
+    double sf=sqrt(slscproduct(a,a));
     a->x=a->x/sf;
     a->y=a->y/sf;
     a->z=a->z/sf;
@@ -282,24 +288,31 @@ char slvectintri(const slvect *a,const sltri *t)
     slvect *edge=&_slgp0;
     /*A vector starting on the first vertex of the edge and ending on our point*/
     slvect *vp=&_slgp1;
-    /*A vector for storing the first cross product. We'll use it for checking if the other vectors point roughly towards the same direction*/
-    slvect *ref=&_slgp2;
-    /*A vector for the other cross products*/
+    /*A normal vector. We'll use it for checking if the other vectors point roughly towards the same direction*/
+    slvect *normal=&_slgp2;
+    /*Result vector*/
     slvect *result=&_slgp3;
+    double reference;/*Scalar product of the first vector and the normal vector*/
     /*AB edge*/
     slvectsub(&t->a,&t->b,edge);
+
+    /*We'll use this opportunity to calculate the normal vector, too*/
+    slvectsub(&t->a,&t->c,vp);
+    slvectproduct(vp,edge,normal);
+
     slvectsub(a,&t->a,vp);
-    slvectproduct(edge,vp,ref);
+    slvectproduct(vp,edge,result);
+    reference=slscproduct(result,normal);
     /*BC edge*/
     slvectsub(&t->b,&t->c,edge);
     slvectsub(a,&t->b,vp);
-    slvectproduct(edge,vp,result);
-    if(slscproduct(result,ref)<0)return 0;
+    slvectproduct(vp,edge,result);
+    if(slscproduct(result,normal)*reference<0)return 0;
     /*CA edge*/
     slvectsub(&t->c,&t->a,edge);
     slvectsub(a,&t->c,vp);
-    slvectproduct(edge,vp,result);
-    if(slscproduct(result,ref)<0)return 0;
+    slvectproduct(vp,edge,result);
+    if(slscproduct(result,normal)*reference<0)return 0;
     return 1;
 }
 
@@ -313,6 +326,10 @@ void slrandray(slcamera *camera,int maxc)
     s=camera->image->h*camera->image->w;
     for(i=0;i<s;i++)camera->rays[i]->c=rand()%maxc;
 }
+
+double pmaxs=0;
+double maxs=0;
+
 void slcalcray(slray *ray,const sltri**triangles)
 {
     int i=0;
@@ -320,7 +337,10 @@ void slcalcray(slray *ray,const sltri**triangles)
     double min=__DBL_MAX__;
     slvect *pos=&_slgpm0,*dir=&_slgpm1;
     if(!ray||!triangles||!(triangles[0]))return;
-    if(ray->depth<ray->c*sqrt(slscproduct(&ray->dir,&ray->dir)))
+    double dirnorm=sqrt(slscproduct(&ray->dir,&ray->dir));
+    double upperlimit=(ray->c+1)*dirnorm;
+    double lowerlimit=(ray->c)*dirnorm;
+    if(ray->depth<lowerlimit)
     {
         ray->c=0;
         ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=0;
@@ -329,19 +349,32 @@ void slcalcray(slray *ray,const sltri**triangles)
         return;
     }
     ray->c++;
+    double S=0.0;
+    double bright;
     while(triangles[i]!=NULL)
     {
-        s=slvectintersect(&ray->pos,&ray->dir,triangles[i]);
-        if(s>=0&&s<min&&s<ray->c+1)
+        *dir=ray->dir;
+        slvectnormalize(dir);
+        s=slvectintersect(&ray->pos,dir,triangles[i]);
+        if(s>=0&&s<min&&s<upperlimit&&s>lowerlimit)
         {
-            slvectscale(&ray->dir,s,dir);
+            slvectscale(dir,s,dir);
             slvectsum(&ray->pos,dir,pos);
             if(slvectintri(pos,triangles[i]))
             {
+                maxs=maxs>s?maxs:s;
                 min=s;
-                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=triangles[i]->colour[0];
-                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=triangles[i]->colour[1];
-                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=triangles[i]->colour[2];
+                bright=s<maxs?(s/maxs):1;
+                bright=(S+((1-S)*(1-bright)));
+                
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=bright*(unsigned char)255;//(unsigned char)triangles[i]->colour[0]/(1+bright);
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=bright*(unsigned char)255;//(unsigned char)triangles[i]->colour[1]/(1+bright);
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=bright*(unsigned char)255;//(unsigned char)triangles[i]->colour[2]/(1+bright);
+                
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=(unsigned char)triangles[i]->colour[0]*bright;
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=(unsigned char)triangles[i]->colour[1]*bright;
+                ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=(unsigned char)triangles[i]->colour[2]*bright;
+                
                 ray->c=0;
             }
         }
@@ -352,6 +385,9 @@ void slstep(slcamera *camera,const sltri**triangles)
 {
     if(!camera||!triangles||!triangles[0])return;
     int i,s;
+    maxs=(8*pmaxs)/10;
     s=camera->image->h*camera->image->w*camera->image->s;
-    for(i=0;i<s;i++)slcalcray(camera->rays[i],triangles);
+    for(i=0;i<s;i++)
+        slcalcray(camera->rays[i],triangles);
+    pmaxs=maxs;
 }
