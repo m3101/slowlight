@@ -169,6 +169,11 @@ char slvectintri(const slvect *a,const sltri *t);
 
 /*Raycasting functions*/
 
+/*Calculates one cycle of a ray*/
+void slcalcray(slray *ray,const sltri**triangles);
+/*Cycles all the camera's rays*/
+void slstep(slcamera *camera,const sltri**triangles);
+
 /*Constants*/
 /*(1,0,0)*/
 slvect slx;

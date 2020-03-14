@@ -1,5 +1,6 @@
 #include "./slowlight.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 /*
 Copyright (c) 2020 Amélia O. F. da S.
@@ -273,4 +274,41 @@ char slvectintri(const slvect *a,const sltri *t)
     slvectproduct(edge,vp,result);
     if(slscproduct(result,ref)<0)return 0;
     return 1;
+}
+
+/*Raycasting functions*/
+/*Calculates one cycle of a ray*/
+void slcalcray(slray *ray,const sltri**triangles)
+{
+    int i=0;
+    float s;
+    slvect *pos=&_slgpm0,*dir=&_slgpm1;
+    if(!ray||!triangles||!(triangles[0]))return;
+    while(triangles[i]!=NULL)
+    {
+        s=slvectintersect(&ray->pos,&ray->dir,triangles[i]);
+        if(s>=0&&s<ray->c+1)
+        {
+            slvectscale(&ray->dir,s,dir);
+            slvectsum(&ray->pos,dir,pos);
+            if(slvectintri(pos,triangles[i]))
+            {
+                ray->screen->data[ray->rx+ray->ry*ray->screen->w]=triangles[i]->colour[0];
+                ray->screen->data[ray->rx+ray->ry*ray->screen->w+1]=triangles[i]->colour[1];
+                ray->screen->data[ray->rx+ray->ry*ray->screen->w+2]=triangles[i]->colour[2];
+                ray->c=0;
+                return;
+            }
+        }
+        i++;
+    }
+    ray->c++;
+}
+/*Cycles all the camera's rays*/
+void slstep(slcamera *camera,const sltri**triangles)
+{
+    if(!camera||!triangles||!triangles[0])return;
+    int i,s;
+    s=camera->image->h*camera->image->w*camera->image->s;
+    for(i=0;i<s;i++)slcalcray(camera->rays[i],triangles);
 }
