@@ -2,9 +2,10 @@
 A C-based raycaster renderer in which every ray is not instantly calculated, but rather moves perceptibly slowly, thus making it easier to visualize interesting near-lightspeed geometrical distortions.
 
 ## Building
-For building the examples, run buildtests.sh on linux environments or
 
-`gcc -o build/$file.out tests/<FILENAME> src/slowlight.c src/slt.c external/gfx.c -g -lm -lX11`
+If you are on a Linux environment, run the `source buildtests.sh` command at the rood directory of the project.
+
+On other environments, build each example individually with the `gcc -o build/<FILENAME>.<EXE/OUT/Your binary extension> tests/<FILENAME> src/slowlight.c src/slt.c external/gfx.c -g -lm -lX11` command.
 
 for each example you want to build on other environments (though this was only tested on linux).
 
