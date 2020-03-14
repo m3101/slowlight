@@ -17,7 +17,7 @@ There are wikipedia links at the maths-heavy parts of the code.
 ## History
 Once I was bored and decided to spin around in my swivel chair. After stopping, I thought something like "Hey, were light to be slower, the background would keep spinning for a little longer, as it's farther away".
 
-I decided to make a little raycaster to test whether that would really happen. I quickly figured this method I used is definitely not optimal, but as I had already spent a whole day making the raycaster, I decided to keep it.
+I decided to make a little raycaster to test whether that would really happen. I quickly figured the method I used is definitely not optimal, but as I had already spent a whole day making the raycaster, I decided to keep it.
 
 One day and lots of workarounds later I could prove that yes, the background would keep spinning, and the closer objects would start spinning first when starting the rotation.
 
@@ -35,7 +35,7 @@ This gets even more interesting when applied to more complex scenes.
 
 ![Complex distortion example](./docs/Stretching.png)
 
-Here the scene is rotation clockwise. We can see that the objects at the right side appear to be stretched out, while the opposite happens at the left side.
+Here the scene is rotating clockwise. We can see that the objects at the right side appear to be stretched out, while the opposite happens at the left side.
 
 We can also verify the phenomenon I originally wanted to observe:
 
