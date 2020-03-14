@@ -20,6 +20,29 @@ I decided to make a little raycaster to test whether that would really happen. I
 
 One day and lots of workarounds later I could prove that yes, the background would keep spinning, and the closer objects would start spinning first when starting the rotation.
 
+## Examples and observations
+
+The simplest way to understand this project is by seeing it in action.
+
+A good demonstration of what's going on is the triangle rotation example at `raster_test.c`.
+
+When the triangle is rendered still, we can clearly see its triangular shape. When it's rotating counterclockwise, though, the parts of it that are farther away from the camera are updated less often, so we see a curve forming, where the inside of the triangle appears to be rotating "faster" than the outside.
+
+![Triangle distortion example](./docs/StretchingTriangle.png)
+
+This gets even more interesting when applied to more complex scenes.
+
+![Complex distortion example](./docs/Stretching.png)
+
+Here the scene is rotation clockwise. We can see that the objects at the right side appear to be stretched out, while the opposite happens at the left side.
+
+We can also verify the phenomenon I originally wanted to observe:
+
+![Asynchronous rotation example](./docs/CloserFirst.png)
+
+Here we see the beginning of a clockwise rotation. The green plane is closer to the camera, so it has already moved much further than the background.
+When the rotation stops, indeed, the background keeps moving for a little while.
+
 ## Disclaimer
 I don't guarantee the extraction of any kind of scientific data or meaning from the results of this project (or anything, really. Please refer to the [MIT License](./LICENCE) under which this project is distributed).
 
