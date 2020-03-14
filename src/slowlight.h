@@ -65,6 +65,7 @@ typedef struct _slray {
     int c;/*Number of cycles passed since last collision*/
     slvect pos;/*A vector that marks the ray's position*/
     slvect dir;/*A direction vector*/
+    double depth;/*Depth at which the ray respawns*/
 }slray;
 /*Instantiates a slray object. Vectors will be copied to the ray, not passed by reference.*/
 slray* Slray(slraster* screen, int rx, int ry, const slvect *pos, const slvect *dir);
@@ -95,6 +96,7 @@ typedef struct _slcamera{
     double w;/*Camera width in "real-world" units (same units as the vectors)*/
     double h;/*Camera height in "real-world" units (same units as the vectors)*/
     double raystep;/*Camera raystep*/
+    double depth;/*Depth at which rays respawn*/
 } slcamera;
 /*
 Generates a slcamera object from a slraster object and parameters.
@@ -102,7 +104,7 @@ Most parameters come from slcamera properties.
 Vectors will be copied, not stored by reference, so you can reuse them without affecting the camera.
 raystep dictates how long each ray will move for each step
 */
-slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep);
+slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep,const double depth);
 /*Updates a camera's rays to its current parameters and position*/
 void slupdatecamera(slcamera *camera);
 /*Frees a slcamera object*/
@@ -172,6 +174,8 @@ char slvectintri(const slvect *a,const sltri *t);
 
 /*Raycasting functions*/
 
+/*Randomizes the initial positions of the rays*/
+void slrandray(slcamera *camera,int maxc);
 /*Calculates one cycle of a ray*/
 void slcalcray(slray *ray,const sltri**triangles);
 /*Cycles all the camera's rays*/

@@ -1,6 +1,7 @@
 #include "slt.h"
 #include "slowlight.h"
 #include <stdio.h>
+#include <stdlib.h>
 /*
 Copyright (c) 2020 Amélia O. F. da S.
 
@@ -22,4 +23,67 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-sltri*** sltToSltriArrayList(const char* fname);
+sltri** sltToSltriList(const char* fname)
+{
+    sltri **ret=NULL;
+    slvect *aa=Slvect(0,0,0),*bb=Slvect(0,0,0),*cc=Slvect(0,0,0);
+    FILE* f=fopen(fname,"r");
+    if(!f)return NULL;
+    char r,g,b;
+    int i=0,len,_r,_g,_b;
+    while(!feof(f))
+    {
+        if(fgetc(f)=='#'){fscanf(f,"%*[^\n]");fscanf(f,"%*[\n\r]");}
+        else{
+            fseek(f,-1,SEEK_CUR);
+            if(ret)
+            {
+                fscanf(f,"%d",&_r);
+                r=(char)_r;
+                fscanf(f,"%d",&_g);
+                g=(char)_g;
+                fscanf(f,"%d",&_b);
+                b=(char)_b;
+                fscanf(f,"%lf",&aa->x);
+                fscanf(f,"%lf",&aa->y);
+                fscanf(f,"%lf",&aa->z);
+                fscanf(f,"%lf",&bb->x);
+                fscanf(f,"%lf",&bb->y);
+                fscanf(f,"%lf",&bb->z);
+                fscanf(f,"%lf",&cc->x);
+                fscanf(f,"%lf",&cc->y);
+                fscanf(f,"%lf",&cc->z);
+                ret[i]=Sltri(aa,bb,cc);
+                ret[i]->colour[0]=r;
+                ret[i]->colour[1]=g;
+                ret[i++]->colour[2]=b;
+                fscanf(f,"%*[\n\r]");
+            }
+            else{
+                fscanf(f,"%d",&len);
+                ret=malloc(sizeof(sltri*)*len+1);
+                ret[len]=NULL;
+                fscanf(f,"%*[^\n]");fscanf(f,"%*[\n\r]");
+            }
+        }
+    }
+    fclose(f);
+    return ret;
+}
+
+void freesltriarray(sltri*** array)
+{
+    if(!array||!(*array))return;
+    int i=0;
+    while((*array)[i]!=NULL)free((*array)[i++]);
+    free(*array);
+    *array=NULL;
+}
+
+int sllen(void** array)
+{
+    if(!array)return 0;
+    int i=0;
+    while(array[i++]!=NULL){}
+    return i-1;
+}

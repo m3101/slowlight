@@ -1,11 +1,34 @@
 #A simple test scene for slowlight
-#Contains a 10u-sized plane 10u into the x axis centered around (10,0,0)
-2
+7
+#Red Wall
 255 0 0
-10 -5 -5
-10 -5 5
-10 5 5
+5 -5 0
+-5 -5 0
+-5 -5 10
 255 0 0
-10 -5 -5
-10 5 -5
-10 5 5
+-5 -5 10
+5 -5 0
+5 -5 10
+#Blue Wall
+0 0 255
+5 5 0
+5 -5 0
+5 -5 10
+0 0 255
+5 -5 10
+5 5 0
+5 5 10
+#Green Floor
+0 255 0
+5 5 0
+5 -5 0
+-5 -5 0
+0 255 0
+5 5 0
+-5 -5 0
+-5 5 0
+#Purple triangle
+255 0 255
+3 3 0
+-3 -3 0
+0 0 4.4

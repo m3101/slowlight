@@ -28,8 +28,16 @@ SOFTWARE.
 #define SLT
 
 /*
-Reads a slt file and outputs a NULL-sentinel-terminated list of
+Reads a slt file and outputs a NULL-sentinel-terminated list of Triangles
 */
-sltri*** sltToSltriArrayList(const char* fname);
+sltri** sltToSltriList(const char* fname);
+/*
+Frees the memory allocated to a triangle list
+*/
+void freesltriarray(sltri*** array);
+/*
+Returns the length of a NULL-sentinel list
+*/
+int sllen(void** array);
 
 #endif

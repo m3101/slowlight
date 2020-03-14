@@ -81,6 +81,7 @@ slray* Slray(slraster* screen, int rx, int ry, const slvect *pos, const slvect *
     ret->pos=*pos;
     ret->dir=*dir;
     ret->c=0;
+    ret->depth=100;
     return ret;
 }
 
@@ -93,7 +94,7 @@ sltri* Sltri(const slvect *a,const slvect *b,const slvect *c)
     return ret;
 }
 
-slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep)
+slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const double roll,const double fl,const double w,const double h,const double raystep,const double depth)
 {
     if(!image||!pos||!dir)return NULL;
     slcamera *ret=malloc(sizeof(slcamera));
@@ -110,6 +111,7 @@ slcamera *Slcamera(slraster *image,const slvect *pos,const slvect *dir,const dou
     ret->h=h;
     ret->roll=roll;
     ret->raystep=raystep;
+    ret->depth=depth;
 
     /*We first define the focal point of the camera*/
     slvectscale(dir,fl,rdir);
@@ -160,6 +162,7 @@ void slupdatecamera(slcamera *camera)
         slvectscale(rdir,camera->raystep,rdir);
         camera->rays[i]->dir=*rdir;
         camera->rays[i]->pos=*rpos;
+        camera->rays[i]->depth=camera->depth;
     }
 }
 
@@ -301,34 +304,50 @@ char slvectintri(const slvect *a,const sltri *t)
 }
 
 /*Raycasting functions*/
-/*Calculates one cycle of a ray*/
+
+
+void slrandray(slcamera *camera,int maxc)
+{
+    if(!camera)return;
+    int i,s;
+    s=camera->image->h*camera->image->w;
+    for(i=0;i<s;i++)camera->rays[i]->c=rand()%maxc;
+}
 void slcalcray(slray *ray,const sltri**triangles)
 {
     int i=0;
     double s;
+    double min=__DBL_MAX__;
     slvect *pos=&_slgpm0,*dir=&_slgpm1;
     if(!ray||!triangles||!(triangles[0]))return;
+    if(ray->depth<ray->c*sqrt(slscproduct(&ray->dir,&ray->dir)))
+    {
+        ray->c=0;
+        ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=0;
+        ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=0;
+        ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=0;
+        return;
+    }
+    ray->c++;
     while(triangles[i]!=NULL)
     {
         s=slvectintersect(&ray->pos,&ray->dir,triangles[i]);
-        if(s>=0&&s<ray->c+1)
+        if(s>=0&&s<min&&s<ray->c+1)
         {
             slvectscale(&ray->dir,s,dir);
             slvectsum(&ray->pos,dir,pos);
             if(slvectintri(pos,triangles[i]))
             {
+                min=s;
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=triangles[i]->colour[0];
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=triangles[i]->colour[1];
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=triangles[i]->colour[2];
                 ray->c=0;
-                return;
             }
         }
         i++;
     }
-    ray->c++;
 }
-/*Cycles all the camera's rays*/
 void slstep(slcamera *camera,const sltri**triangles)
 {
     if(!camera||!triangles||!triangles[0])return;

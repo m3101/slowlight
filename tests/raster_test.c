@@ -7,9 +7,10 @@
 
 int main()
 {
-	slraster *raster=Slraster(150,150,3);
-	slvect *pos=Slvect(4.2,0,2),*dir=Slvect(1,0,0);
-	slcamera *cam=Slcamera(raster,pos,dir,0,1.5,10,10,0.9);
+	slraster *raster=Slraster(300,300,3);
+	slvect *pos=Slvect(4.5,0,2),*dir=Slvect(1,0,0);
+	slcamera *cam=Slcamera(raster,pos,dir,0,1,20,20,0.9,100);
+	slrandray(cam,100);
 	sltri** triangles=malloc(sizeof(sltri)*3);
 	slvect *a,*b,*c;
     a=Slvect(5,-5,-5);
@@ -29,8 +30,8 @@ int main()
 	
 	triangles[2]=NULL;
 	int x,y;
-	int ysize = 150;
-	int xsize = 150;
+	int ysize = 300;
+	int xsize = 300;
 	/*//printf("execute({\"Vector((%.2lf,%.2lf,%.2lf),(%.2lf+(%.2lf),%.2lf+(%.2lf),%.2lf+(%.2lf)))\",",cam->pos.x,cam->pos.y,cam->pos.z,cam->pos.x,cam->dir.x,cam->pos.y,cam->dir.y,cam->pos.z,cam->dir.z);
 	printf("execute({");
 	for(y=0;y<2;y++)
@@ -58,6 +59,7 @@ int main()
 			}
 		}
 		cam->roll+=0.009*((cyc-(double)cy)/cyc);
+		cam->raystep+=0.01;
 		//cam->pos.x+=.01;
 		slupdatecamera(cam);
 		nanosleep(&tim,&tim2);
