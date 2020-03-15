@@ -185,6 +185,27 @@ void slcalcray(slray *ray,const sltri**triangles);
 /*Cycles all the camera's rays*/
 void slstep(slcamera *camera,const sltri**triangles);
 
+/*Interaction functions*/
+
+/*Multiplier for the direction vector when translating the camera*/
+double walktick;
+/*Rotation in radians for each camera update*/
+double rottick;
+/*Focal length change rate for each camera update*/
+double fltick;
+
+/*
+Updates the camera position according to a keyboard event c
+Use:
+*w and s for forwards and backwards translation
+*a and d for lateral translation
+*t and g for vertical translation
+*q and e for z-rotation
+*r and f for y-rotation
+*z and x for camera focal length
+*/
+void slcameractl(slcamera *camera,char c,int rand);
+
 /*Constants*/
 /*(1,0,0)*/
 slvect slx;

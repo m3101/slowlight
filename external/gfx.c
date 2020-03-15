@@ -10,9 +10,12 @@ Version 2, 9/23/2011 - Fixes a bug that could result in jerky animation.
 */
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
+#include <time.h>
 
 #include "gfx.h"
 
@@ -182,6 +185,26 @@ char gfx_wait()
 			saved_ypos = event.xkey.y;
 			return event.xbutton.button;
 		}
+	}
+}
+
+/*Asynchronously pop the X event list*/
+char gfx_pop_event()
+{
+	XEvent event;
+	if(XPending(gfx_display))
+		while(XPending(gfx_display))
+			XNextEvent(gfx_display,&event);
+	else return 0;
+
+	if(event.type==KeyPress) {
+		saved_xpos = event.xkey.x;
+		saved_ypos = event.xkey.y;
+		return XLookupKeysym(&event.xkey,0);
+	} else if(event.type==ButtonPress) {
+		saved_xpos = event.xkey.x;
+		saved_ypos = event.xkey.y;
+		return event.xbutton.button;
 	}
 }
 

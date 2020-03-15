@@ -12,7 +12,7 @@ int main()
     int s=300;
 	slraster *raster=Slraster(s,s,3);
 	slvect *pos=Slvect(-3,3,4),*dir=Slvect(1,-1,0);
-	slcamera *cam=Slcamera(raster,pos,dir,-SL_PI/4,1,5,5,0.3,10);
+	slcamera *cam=Slcamera(raster,pos,dir,-SL_PI/4,5,5,5,100.3,10);
     slrandray(cam,100);
 	sltri** triangles=sltToSltriList("build/polgono.slt");
     if(!triangles)
@@ -45,10 +45,11 @@ int main()
 				gfx_point(x,y);
 			}
 		}
-		if(cy>100)
+		/*if(cy>100)
         	cam->roll=2*((SL_PI/4)*sin((SL_PI*2*cy)/200)*sin((SL_PI*cy)/200));
-		else cam->roll=0;
-		slupdatecamera(cam,10);
+		else cam->roll=0;*/
+		char c=gfx_pop_event();
+		slcameractl(cam,c,0);
 		nanosleep(&tim,&tim2);
 		cy++;
 	}

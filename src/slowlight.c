@@ -366,11 +366,11 @@ void slcalcray(slray *ray,const sltri**triangles)
                 min=s;
                 bright=s<maxs?(s/maxs):1;
                 bright=(S+((1-S)*(1-bright)));
-                
+                /*
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=bright*(unsigned char)255;//(unsigned char)triangles[i]->colour[0]/(1+bright);
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=bright*(unsigned char)255;//(unsigned char)triangles[i]->colour[1]/(1+bright);
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=bright*(unsigned char)255;//(unsigned char)triangles[i]->colour[2]/(1+bright);
-                
+                */
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s]=(unsigned char)triangles[i]->colour[0]*bright;
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+1]=(unsigned char)triangles[i]->colour[1]*bright;
                 ray->screen->data[(ray->rx+ray->ry*ray->screen->w)*ray->screen->s+2]=(unsigned char)triangles[i]->colour[2]*bright;
@@ -390,4 +390,79 @@ void slstep(slcamera *camera,const sltri**triangles)
     for(i=0;i<s;i++)
         slcalcray(camera->rays[i],triangles);
     pmaxs=maxs;
+}
+
+/*Interaction functions*/
+
+double walktick=0.3;
+double rottick=10*(SL_PI/180);
+double fltick=0.1;
+
+void slcameractl(slcamera *camera,char c,int rand)
+{
+    slvect *dir=&_slgpm0,*norm=&_slgpm1;
+    double dirnorm=slscproduct(&camera->dir,&camera->dir);
+    if(c)
+    {
+        switch (c)
+        {
+        case 'w':
+            slvectscale(&camera->dir,walktick,dir);
+            slvectsum(&camera->pos,dir,&camera->pos);
+            break;
+        case 's':
+            slvectscale(&camera->dir,-walktick,dir);
+            slvectsum(&camera->pos,dir,&camera->pos);
+            break;
+        case 'a':
+            slvectscale(&camera->dir,walktick,dir);
+            slvectrotate(dir,0,0,-SL_PI/2);
+            slvectsum(&camera->pos,dir,&camera->pos);
+            break;
+        case 'd':
+            slvectscale(&camera->dir,walktick,dir);
+            slvectrotate(dir,0,0,SL_PI/2);
+            slvectsum(&camera->pos,dir,&camera->pos);
+            break;
+        case 't':
+            slvectscale(&camera->dir,walktick,dir);
+            slvectproduct(dir,&slz,norm);
+            slvectrotateaxis(dir,norm,SL_PI/2);
+            slvectsum(&camera->pos,dir,&camera->pos);
+            break;
+        case 'g':
+            slvectscale(&camera->dir,walktick,dir);
+            slvectproduct(dir,&slz,norm);
+            slvectrotateaxis(dir,norm,-SL_PI/2);
+            slvectsum(&camera->pos,dir,&camera->pos);
+            break;
+        case 'q':
+            slvectrotate(&camera->dir,0,0,-rottick);
+            camera->roll+=rottick;
+            break;
+        case 'e':
+            slvectrotate(&camera->dir,0,0,rottick);
+            camera->roll-=rottick;
+            break;
+         case 'r':
+            slvectproduct(&camera->dir,&slz,norm);
+            slvectrotateaxis(&camera->dir,norm,rottick);
+            //camera->roll-=rottick*sqrt(slscproduct(norm,norm));
+            break;
+        case 'f':
+            slvectproduct(&camera->dir,&slz,norm);
+            slvectrotateaxis(&camera->dir,norm,-rottick);
+            //camera->roll+=rottick*sqrt(slscproduct(norm,norm));
+            break;
+        case 'z':
+            camera->fl+=fltick;
+            break;
+        case 'x':
+            camera->fl-=fltick;
+            break;
+        default:
+            break;
+        }
+    }
+    slupdatecamera(camera,rand);
 }
